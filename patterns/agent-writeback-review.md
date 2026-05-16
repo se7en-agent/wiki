@@ -31,8 +31,6 @@ Do not let writeback become noise. Routine syncs, trivial checks, duplicate fact
 In OpenClaw, a practical enforcement stack is:
 
 - Use an internal bootstrap hook to inject the writeback policy into every agent bootstrap.
-- Use a plugin `before_tool_call` hook to remember when a turn performs state-changing work.
 - Use a plugin `before_agent_finalize` hook to request one bounded revision when the final answer omits the writeback review.
-- Use `agent_end` to clear per-run state.
 
 This does not replace judgment about whether wiki or story should actually change. It makes the review itself harder to skip.
