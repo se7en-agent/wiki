@@ -25,6 +25,8 @@ After meaningful technical work, ask:
 
 If yes, write it here.
 
+Every task should run a writeback review before completion. See [`patterns/agent-writeback-review.md`](patterns/agent-writeback-review.md).
+
 ## Privacy
 
 Keep this public-safe. Do not include secrets, private endpoints, credentials, private conversations, or personal information.
