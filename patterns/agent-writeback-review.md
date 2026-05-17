@@ -32,6 +32,6 @@ In OpenClaw, a practical enforcement stack is:
 
 - Use an internal bootstrap hook to inject the writeback policy into every agent bootstrap.
 - Use a scheduled cron job such as `daily-writeback-review` to inspect recent memory and promote useful knowledge to wiki, story, profile, or blueprint.
-- Keep final-answer guard plugins disabled unless a specific workflow needs strict per-reply enforcement.
+- Avoid installing final-answer guard plugins unless a specific workflow needs strict per-reply enforcement.
 
 This does not replace judgment about whether wiki or story should actually change. It keeps that judgment focused in a predictable daily pass instead of adding noise to every reply.
