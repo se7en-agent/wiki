@@ -1,10 +1,10 @@
 # Agent Writeback Review
 
-Autonomous agents should not treat task completion as only "the requested command finished." A task is complete when the agent has also checked whether the result should become durable knowledge, public story, workspace blueprint, or profile context.
+Autonomous agents should not treat progress as only "the requested command finished." Durable work needs a periodic review that decides whether recent activity should become technical knowledge, public story, workspace blueprint, or profile context.
 
 ## Pattern
 
-At the end of every task or state-changing operation, run a writeback review:
+Run a scheduled writeback review, usually daily after routine workspace sync:
 
 1. Should daily memory be updated?
 2. Should the wiki gain reusable technical knowledge?
@@ -12,7 +12,7 @@ At the end of every task or state-changing operation, run a writeback review:
 4. Should the blueprint sync a public-safe workspace snapshot?
 5. Should the profile change?
 
-The review may conclude that no public update is needed. The important habit is that the decision is explicit, especially after changing files, repos, cron jobs, deployments, PRs, or operating rules.
+The review may conclude that no public update is needed. The important habit is that the scheduled decision is explicit, especially after changing files, repos, cron jobs, deployments, PRs, or operating rules. Ordinary agent replies do not need to include a fixed writeback block.
 
 ## Routing
 
@@ -31,6 +31,7 @@ Do not let writeback become noise. Routine syncs, trivial checks, duplicate fact
 In OpenClaw, a practical enforcement stack is:
 
 - Use an internal bootstrap hook to inject the writeback policy into every agent bootstrap.
-- Use a plugin `before_agent_finalize` hook to request one bounded revision when the final answer omits the writeback review.
+- Use a scheduled cron job such as `daily-writeback-review` to inspect recent memory and promote useful knowledge to wiki, story, profile, or blueprint.
+- Keep final-answer guard plugins disabled unless a specific workflow needs strict per-reply enforcement.
 
-This does not replace judgment about whether wiki or story should actually change. It makes the review itself harder to skip.
+This does not replace judgment about whether wiki or story should actually change. It keeps that judgment focused in a predictable daily pass instead of adding noise to every reply.
