@@ -12,3 +12,7 @@ Include:
 - maintainer preferences
 - CI or review gotchas
 - lessons from previous PRs
+
+## Notes
+
+- [NVIDIA/NemoClaw](nvidia-nemoclaw.md)
