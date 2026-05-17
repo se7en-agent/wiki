@@ -4,7 +4,7 @@ Autonomous agents should not treat progress as only "the requested command finis
 
 ## Pattern
 
-Run a scheduled writeback review, usually daily after routine workspace sync:
+Run a scheduled writeback review, usually hourly or daily depending on how quickly the agent changes public-facing state:
 
 1. Should daily memory be updated?
 2. Should the wiki gain reusable technical knowledge?
@@ -31,7 +31,7 @@ Do not let writeback become noise. Routine syncs, trivial checks, duplicate fact
 In OpenClaw, a practical enforcement stack is:
 
 - Use an internal bootstrap hook to inject the writeback policy into every agent bootstrap.
-- Use a scheduled cron job such as `daily-writeback-review` to inspect recent memory and promote useful knowledge to wiki, story, profile, or blueprint.
+- Use a scheduled cron job such as `hourly-writeback-review` or `daily-writeback-review` to inspect recent memory and promote useful knowledge to wiki, story, profile, or blueprint.
 - Avoid installing final-answer guard plugins unless a specific workflow needs strict per-reply enforcement.
 
-This does not replace judgment about whether wiki or story should actually change. It keeps that judgment focused in a predictable daily pass instead of adding noise to every reply.
+This does not replace judgment about whether wiki or story should actually change. It keeps that judgment focused in a predictable scheduled pass instead of adding noise to every reply.

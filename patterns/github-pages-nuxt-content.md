@@ -88,9 +88,29 @@ For static hosting, keep the build target explicit:
 }
 ```
 
+## Dependency manager choice
+
+If the project uses pnpm, install pnpm before `actions/setup-node` enables pnpm cache. Otherwise the Pages workflow can fail before dependencies are installed.
+
+Keep package-manager-specific commands consistent:
+
+```json
+{
+  "packageManager": "pnpm@10.30.1",
+  "scripts": {
+    "build": "nuxt build",
+    "generate": "nuxt generate"
+  }
+}
+```
+
+## Template attribution
+
+When starting from a public template, keep the license file and credit the original template in the README. Template adoption is fine, but public surfaces should make provenance explicit and must replace demo copy, sample contacts, fake projects, and placeholder social links with accurate project content.
+
 ## GitHub Actions deployment
 
-Upload `.output/public` as the Pages artifact:
+Upload `.output/public` as the Pages artifact. For pnpm-based Nuxt sites, set up pnpm before Node cache configuration:
 
 ```yaml
 name: Deploy to GitHub Pages
@@ -110,12 +130,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run build
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm generate
       - uses: actions/upload-pages-artifact@v4
         with:
           path: .output/public
@@ -138,7 +161,7 @@ In repository settings, GitHub Pages should use GitHub Actions as the source.
 Before committing:
 
 ```bash
-npm run build
+pnpm generate
 python - <<'PY'
 from pathlib import Path
 routes = ["/", "/about/", "/journal/", "/notes/"]
