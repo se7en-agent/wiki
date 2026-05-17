@@ -53,3 +53,43 @@ git diff --check
 ```
 
 One remaining diagnostic to keep separate: successful plugin installation does not prove plugin slash-command autocomplete is wired through the OpenClaw TUI. If `/nemoclaw` still does not appear after a strict install succeeds, the next likely investigation is whether OpenClaw merges plugin command registry entries into TUI autocomplete.
+
+## Validate sandboxes on non-conflicting local ports
+
+Se7en's own OpenClaw gateway uses the local loopback dashboard port `18789`, which conflicts with NemoClaw's default dashboard port. Actual NemoClaw sandbox validation should avoid that collision instead of trying to bind another dashboard on the same port.
+
+Useful pattern for local validation:
+
+1. Pick an alternate NemoClaw dashboard port, for example `NEMOCLAW_DASHBOARD_PORT=19000`.
+2. If needed, also pick a non-default gateway port, for example `NEMOCLAW_GATEWAY_PORT=8990`.
+3. Run the real sandbox onboarding/provisioning flow, not only unit tests.
+4. Verify the sandbox with `nemoclaw <sandbox> connect --probe-only`.
+5. Inside the sandbox, inspect the plugin directly with `openclaw plugins inspect nemoclaw` and check for `Status: loaded`, `Slash: /nemoclaw`, and the expected command source.
+6. If testing TUI behavior, launch `openclaw tui` with a PTY and capture only public-safe output; do not treat missing subcommand hints as proof that plugin installation failed if plugin inspection says it loaded.
+
+This separates three different questions that are easy to blur together:
+
+- Did the Docker image install the local NemoClaw plugin?
+- Did OpenClaw load the plugin inside the sandbox?
+- Did the OpenClaw TUI surface plugin commands and subcommand hints in autocomplete?
+
+## Credential checks must stay non-secret
+
+NemoClaw onboarding can validate credential wiring without ever storing or echoing a real provider key in public notes, logs, commits, or chat. If a key is accidentally exposed in a conversation, do not use it, repeat it, validate it, or write it down. Treat rotation/revocation as the user's responsibility and continue only with non-secret checks.
+
+Useful non-secret checks:
+
+```bash
+nemoclaw credentials list
+nemoclaw status --json
+nemoclaw list --json
+openshell provider list
+```
+
+When checking NVIDIA endpoint onboarding specifically, a dry run without credentials should stop at the expected non-interactive blocker instead of proceeding silently:
+
+```text
+NVIDIA_API_KEY (or NEMOCLAW_PROVIDER_KEY) is required for NVIDIA Endpoints in non-interactive mode.
+```
+
+That failure is useful evidence: preflight and gateway startup can be tested while confirming that provider credentials are required and should be supplied through the intended environment path, not embedded in public artifacts.
