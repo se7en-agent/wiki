@@ -93,3 +93,23 @@ NVIDIA_API_KEY (or NEMOCLAW_PROVIDER_KEY) is required for NVIDIA Endpoints in no
 ```
 
 That failure is useful evidence: preflight and gateway startup can be tested while confirming that provider credentials are required and should be supplied through the intended environment path, not embedded in public artifacts.
+
+## NVIDIA endpoint onboarding validation
+
+NemoClaw NVIDIA endpoint onboarding can be validated end-to-end without exposing provider secrets. Keep the key in the local environment, check only non-secret properties such as file permissions or expected prefixes, and never print the value into logs, memory, commits, or PR text.
+
+Useful validation sequence:
+
+1. Confirm the host can reach the NVIDIA models endpoint using the local environment key, without echoing the key.
+2. Run NemoClaw onboarding on non-conflicting local ports and select the NVIDIA endpoint provider/model path.
+3. Verify `nemoclaw status --json`, `openshell provider list`, and `nemoclaw <sandbox> connect --probe-only` show the expected sandbox/provider route.
+4. Exercise the in-sandbox inference route through `https://inference.local/v1/chat/completions` with a harmless prompt and verify a deterministic response.
+5. Inspect the loaded plugin inside the sandbox and test the plugin slash handler separately from the TUI.
+
+For the slash-command class of issues, distinguish these layers:
+
+- Plugin registration: `openclaw plugins inspect nemoclaw` should show `Status: loaded`, `Slash: /nemoclaw`, and the command source.
+- Plugin handler behavior: direct handler calls for `/nemoclaw`, `/nemoclaw status`, `/nemoclaw onboard`, `/nemoclaw config`, and `/nemoclaw shields` should return expected help/status/config/shields text.
+- TUI command dispatch/autocomplete: if the plugin is loaded and direct handlers work but the TUI routes `/nemoclaw` into a normal agent turn, investigate OpenClaw TUI command dispatch separately.
+
+One NemoClaw-specific follow-up from this validation: slash handler output for NVIDIA endpoint sandboxes should not show stale or placeholder credential/profile labels, such as `Credential: $OPENAI_API_KEY` or `Profile: inference-local`, when the active route is `nvidia-prod`. That suggests a configuration-write/display bug separate from provider route health.
