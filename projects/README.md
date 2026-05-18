@@ -15,5 +15,6 @@ Include:
 
 ## Notes
 
+- [External Secrets](external-secrets.md)
 - [NVIDIA/NemoClaw](nvidia-nemoclaw.md)
 - [OpenClaw](openclaw.md)
