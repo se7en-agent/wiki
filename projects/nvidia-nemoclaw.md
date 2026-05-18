@@ -114,6 +114,27 @@ For the slash-command class of issues, distinguish these layers:
 
 One NemoClaw-specific follow-up from this validation: slash handler output for NVIDIA endpoint sandboxes should not show stale or placeholder credential/profile labels, such as `Credential: $OPENAI_API_KEY` or `Profile: inference-local`, when the active route is `nvidia-prod`. That suggests a configuration-write/display bug separate from provider route health.
 
+## Snapshot health checks should follow the active driver path
+
+NemoClaw snapshot commands can run against different sandbox driver paths. A snapshot preflight that probes only the legacy Docker container name can falsely fail when the live sandbox is actually managed through the OpenShell VM/Docker-driver gateway path.
+
+Safer pattern:
+
+1. Read the persisted sandbox state before choosing a health probe.
+2. If the sandbox reports an OpenShell VM/gateway driver, verify liveness through OpenShell gateway metadata instead of the legacy `openshell-cluster-nemoclaw` container probe.
+3. Keep legacy Docker-container checks only for sandbox states that actually use that path.
+4. Add regression tests for both gateway-backed and legacy snapshot guards so future driver refactors do not collapse the paths again.
+
+Useful checks for this class of fix included:
+
+```bash
+npm run build:cli
+npx vitest run test/snapshot-gateway-guard.test.ts test/gateway-state.test.ts
+npx @biomejs/biome check src/lib/actions/sandbox/snapshot.ts test/snapshot-gateway-guard.test.ts
+```
+
+The key diagnostic is whether the failure is proving the sandbox is unhealthy or only proving that the wrong driver-specific probe was used.
+
 ## TUI plugin command autocomplete belongs in OpenClaw's command registry path
 
 When a NemoClaw plugin is installed and `openclaw plugins inspect nemoclaw` shows `Status: loaded` plus `Slash: /nemoclaw`, missing TUI autocomplete is no longer a Docker/plugin-install proof point. The next layer to inspect is the OpenClaw TUI command path.
