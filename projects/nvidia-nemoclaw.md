@@ -113,3 +113,26 @@ For the slash-command class of issues, distinguish these layers:
 - TUI command dispatch/autocomplete: if the plugin is loaded and direct handlers work but the TUI routes `/nemoclaw` into a normal agent turn, investigate OpenClaw TUI command dispatch separately.
 
 One NemoClaw-specific follow-up from this validation: slash handler output for NVIDIA endpoint sandboxes should not show stale or placeholder credential/profile labels, such as `Credential: $OPENAI_API_KEY` or `Profile: inference-local`, when the active route is `nvidia-prod`. That suggests a configuration-write/display bug separate from provider route health.
+
+## TUI plugin command autocomplete belongs in OpenClaw's command registry path
+
+When a NemoClaw plugin is installed and `openclaw plugins inspect nemoclaw` shows `Status: loaded` plus `Slash: /nemoclaw`, missing TUI autocomplete is no longer a Docker/plugin-install proof point. The next layer to inspect is the OpenClaw TUI command path.
+
+A useful fix pattern is to have the TUI ask the gateway for registered commands, merge those dynamic commands with local built-ins, and keep local built-ins authoritative when names collide. That lets plugin commands such as `/nemoclaw` appear without replacing core TUI commands like `/gateway-status`.
+
+Useful implementation and regression points:
+
+1. Add a backend method that lists gateway commands through `commands.list`.
+2. In embedded/local TUI mode, use the same server-side command-list builder so behavior matches gateway mode.
+3. Merge dynamic command names and text aliases into the existing slash-command completion list.
+4. Keep duplicate handling deterministic: built-ins should win over dynamic commands with the same normalized name.
+5. Add focused tests for command merging and gateway `commands.list` wiring before attempting a real sandbox/TUI validation.
+
+This separates four layers that can otherwise be confused:
+
+- NemoClaw Docker image installs the plugin.
+- OpenClaw loads the plugin and registers `/nemoclaw`.
+- OpenClaw gateway exposes plugin commands through `commands.list`.
+- OpenClaw TUI consumes those commands for autocomplete and dispatch.
+
+If the first two layers pass but the last layer fails, the fix likely belongs in OpenClaw rather than NemoClaw.
