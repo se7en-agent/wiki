@@ -141,6 +141,42 @@ Review polish matters for this class of fix:
 - Name helpers by the behavior they select, such as `usesGatewayMetadataProbe()`, rather than by one implementation detail like Docker.
 - Keep fixture simplification scoped to the new behavior under test. Avoid refactoring older regression fixtures unless the fix requires it.
 
+## Sign NemoClaw contribution commits before push
+
+NemoClaw contribution commits should be signed before they are pushed or used as PR heads. A useful local SSH-signing setup is:
+
+```bash
+git config gpg.format ssh
+git config user.signingkey /path/to/signing-key.pub
+git commit --amend -S --no-edit
+git verify-commit HEAD
+```
+
+For review branches, verify the signature locally before force-pushing an amended PR head. If the host UI still does not show a verified badge, check whether the SSH signing key is registered with the account; local `git verify-commit HEAD` only proves the commit matches the configured allowed signer.
+
+## Prefer behavior tests over brittle source-shape assertions
+
+NemoClaw's generated Dockerfile and provisioning scripts can tempt tests that assert exact source text. Those tests are useful as guardrails only when the desired contract really is a text shape. When CI fails because a source-shape assertion tracks implementation layout instead of behavior, replace it with a test that executes or simulates the generated block.
+
+For plugin-install provisioning, the better contract was:
+
+1. Extract the plugin install `RUN` block.
+2. Execute it against a fake failing `openclaw` binary.
+3. Assert the original exit status propagates.
+4. Assert the expected install arguments were used.
+5. Assert stderr was written to the plugin install log.
+
+Useful checks for this kind of CI repair included:
+
+```bash
+npm run build:cli
+npm run source-shape:check
+npx vitest run test/sandbox-provisioning.test.ts
+git verify-commit HEAD
+```
+
+The lesson is to test the failure mode maintainers care about, not the incidental formatting that happened to express it first.
+
 ## TUI plugin command autocomplete belongs in OpenClaw's command registry path
 
 When a NemoClaw plugin is installed and `openclaw plugins inspect nemoclaw` shows `Status: loaded` plus `Slash: /nemoclaw`, missing TUI autocomplete is no longer a Docker/plugin-install proof point. The next layer to inspect is the OpenClaw TUI command path.
