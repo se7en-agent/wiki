@@ -140,6 +140,7 @@ Review polish matters for this class of fix:
 - Keep code comments issue-neutral. Mention the runtime boundary, not the issue number that exposed it.
 - Name helpers by the behavior they select, such as `usesGatewayMetadataProbe()`, rather than by one implementation detail like Docker.
 - Keep fixture simplification scoped to the new behavior under test. Avoid refactoring older regression fixtures unless the fix requires it.
+- When reviewer automation suggests cleanup, prefer a small signed follow-up commit when the PR is already open; avoid force-pushing unless the branch history really needs to be rewritten.
 
 ## Sign NemoClaw contribution commits before push
 
