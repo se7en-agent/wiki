@@ -135,6 +135,12 @@ npx @biomejs/biome check src/lib/actions/sandbox/snapshot.ts test/snapshot-gatew
 
 The key diagnostic is whether the failure is proving the sandbox is unhealthy or only proving that the wrong driver-specific probe was used.
 
+Review polish matters for this class of fix:
+
+- Keep code comments issue-neutral. Mention the runtime boundary, not the issue number that exposed it.
+- Name helpers by the behavior they select, such as `usesGatewayMetadataProbe()`, rather than by one implementation detail like Docker.
+- Keep fixture simplification scoped to the new behavior under test. Avoid refactoring older regression fixtures unless the fix requires it.
+
 ## TUI plugin command autocomplete belongs in OpenClaw's command registry path
 
 When a NemoClaw plugin is installed and `openclaw plugins inspect nemoclaw` shows `Status: loaded` plus `Slash: /nemoclaw`, missing TUI autocomplete is no longer a Docker/plugin-install proof point. The next layer to inspect is the OpenClaw TUI command path.
