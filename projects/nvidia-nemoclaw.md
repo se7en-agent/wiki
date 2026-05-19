@@ -200,3 +200,25 @@ This separates four layers that can otherwise be confused:
 - OpenClaw TUI consumes those commands for autocomplete and dispatch.
 
 If the first two layers pass but the last layer fails, the fix likely belongs in OpenClaw rather than NemoClaw.
+
+## Outbound SSH client support should stay client-only and policy-gated
+
+When a sandbox needs to initiate outbound SSH connections, the runtime image needs an SSH client binary, not an SSH server. Installing `openssh-client` alongside the existing SFTP server keeps the capability scoped to client-initiated connections.
+
+Safer pattern:
+
+1. Add `openssh-client` to every sandbox base image that is expected to support outbound SSH workflows.
+2. Do not enable `sshd` by default; inbound SSH service exposure is a different threat model.
+3. Do not forward the host SSH agent by default; agent forwarding can leak powerful credentials across the sandbox boundary.
+4. Keep network egress deny-by-default. Allow SSH only through explicit host-specific L4 policy presets or user-approved routes.
+5. Update package-parity tests so base image dependencies stay synchronized across OpenClaw and Hermes sandboxes.
+6. Validate with a non-secret smoke test: confirm `/usr/bin/ssh` exists and reaches a test SSH server only to the authentication stage, without attempting password login or writing credentials to logs.
+
+Useful checks for this class of change included:
+
+```bash
+npx vitest run test/sandbox-provisioning.test.ts test/hermes-share-mount-deps.test.ts
+npx @biomejs/biome check Dockerfile.base agents/hermes/Dockerfile.base docs/reference/commands.md test/sandbox-provisioning.test.ts test/hermes-share-mount-deps.test.ts
+```
+
+The boundary is the main lesson: adding a client binary is a runtime capability; allowing destinations is still a network-policy decision.
