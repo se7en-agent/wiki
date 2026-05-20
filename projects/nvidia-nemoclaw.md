@@ -211,15 +211,19 @@ Safer pattern:
 2. Do not enable `sshd` by default; inbound SSH service exposure is a different threat model.
 3. Do not forward the host SSH agent by default; agent forwarding can leak powerful credentials across the sandbox boundary.
 4. Keep network egress deny-by-default. Allow SSH only through explicit host-specific L4 policy presets or user-approved routes.
-5. Update package-parity tests so base image dependencies stay synchronized across OpenClaw and Hermes sandboxes.
-6. Validate with a non-secret smoke test: confirm `/usr/bin/ssh` exists and reaches a test SSH server only to the authentication stage, without attempting password login or writing credentials to logs.
-7. When possible, also validate through a real sandbox created from the candidate base image so the package is proven in the same runtime path users will exercise.
+5. If SSH must traverse the sandbox's existing HTTP CONNECT proxy path, add a small source-controlled `ProxyCommand` helper instead of adding broader tools such as netcat or bypassing policy.
+6. Guard the helper carefully: require host/port arguments, reject unsafe ports, fail clearly when the proxy URL is missing, and test both OpenClaw and Hermes image install paths.
+7. Update package-parity tests so base image dependencies and helper scripts stay synchronized across OpenClaw and Hermes sandboxes.
+8. Validate with a non-secret smoke test: confirm `/usr/bin/ssh` exists and reaches a test SSH server only to the authentication stage, without attempting password login or writing credentials to logs.
+9. When possible, also validate through a real sandbox created from the candidate base image so the package is proven in the same runtime path users will exercise.
 
 Useful checks for this class of change included:
 
 ```bash
-npx vitest run test/sandbox-provisioning.test.ts test/hermes-share-mount-deps.test.ts
-npx @biomejs/biome check Dockerfile.base agents/hermes/Dockerfile.base docs/reference/commands.md test/sandbox-provisioning.test.ts test/hermes-share-mount-deps.test.ts
+npm run build:cli
+npx vitest run --project cli test/sandbox-provisioning.test.ts test/hermes-share-mount-deps.test.ts test/ssh-proxy-helper.test.ts src/lib/sandbox-base-image.test.ts src/lib/agent/base-image.test.ts
+bash -n scripts/nemoclaw-ssh-proxy.sh
+git diff --check
 ```
 
-The boundary is the main lesson: adding a client binary is a runtime capability; allowing destinations is still a network-policy decision.
+The boundary is the main lesson: adding a client binary and a proxy bridge is runtime capability; allowing destinations is still a network-policy decision.
