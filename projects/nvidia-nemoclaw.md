@@ -213,6 +213,7 @@ Safer pattern:
 4. Keep network egress deny-by-default. Allow SSH only through explicit host-specific L4 policy presets or user-approved routes.
 5. Update package-parity tests so base image dependencies stay synchronized across OpenClaw and Hermes sandboxes.
 6. Validate with a non-secret smoke test: confirm `/usr/bin/ssh` exists and reaches a test SSH server only to the authentication stage, without attempting password login or writing credentials to logs.
+7. When possible, also validate through a real sandbox created from the candidate base image so the package is proven in the same runtime path users will exercise.
 
 Useful checks for this class of change included:
 
