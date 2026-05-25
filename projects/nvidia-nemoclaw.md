@@ -261,10 +261,11 @@ A safer cleanup pattern:
 
 1. Keep ordinary gateway/container cleanup in place.
 2. Add a host-process sweep scoped narrowly enough to avoid killing unrelated OpenShell gateways.
-3. Match candidate processes by command line, then prove NemoClaw ownership through Docker-driver environment/state paths such as the NemoClaw OpenShell gateway database path.
+3. Keep the sweep lean: find `openshell-gateway` candidates, then prove NemoClaw ownership through `/proc/<pid>/environ` using Docker-driver markers such as `OPENSHELL_DRIVERS=docker` and the NemoClaw OpenShell gateway database path.
 4. Do not rely only on an `openshell-gateway.pid` file; stale or absent pidfiles are exactly where the leak can escape.
-5. Wire the cleanup through both explicit gateway destroy cleanup and last-sandbox Linux cleanup paths.
-6. Prove the fix with unit coverage and a process/socket proof that the leaked listener actually disappears.
+5. Use bounded `SIGTERM`/`SIGKILL` fallback for owned candidates, but skip processes whose environment does not prove NemoClaw ownership.
+6. Wire the cleanup through both explicit gateway destroy cleanup and last-sandbox Linux cleanup paths.
+7. Prove the fix with unit coverage and a process/socket proof that the leaked listener actually disappears.
 
 Useful checks for this class of fix included:
 
@@ -275,4 +276,4 @@ npm run build:cli
 npm run typecheck:cli -- --pretty false
 ```
 
-The strongest local proof used an isolated Linux process/network namespace, started a fake NemoClaw-owned `openshell-gateway` on `127.0.0.1:8080`, intentionally left `openshell-gateway.pid` absent, ran the compiled CLI destroy path, and verified with `ss -ltnp 'sport = :8080'` that no listener remained afterwards. The key lesson is to test the destroy boundary users actually hit, not only the lower-level helper that should be called.
+The strongest local proof used an isolated Linux process/network namespace, started a fake NemoClaw-owned `openshell-gateway` on `127.0.0.1:8080`, intentionally left `openshell-gateway.pid` absent, ran the compiled CLI destroy path, and verified with `ss -ltnp 'sport = :8080'` that no listener remained afterwards. A later simplification kept that proof while removing extra result-accounting and command-probing plumbing from the helper. The key lesson is to test the destroy boundary users actually hit, not only the lower-level helper that should be called.
