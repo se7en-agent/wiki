@@ -142,6 +142,28 @@ Review polish matters for this class of fix:
 - Keep fixture simplification scoped to the new behavior under test. Avoid refactoring older regression fixtures unless the fix requires it.
 - When reviewer automation suggests cleanup, prefer a small signed follow-up commit when the PR is already open; avoid force-pushing unless the branch history really needs to be rewritten.
 
+## Uninstall fixes need process-level cleanup proof
+
+NemoClaw uninstall bugs that involve host-side gateway leaks are best verified at the process and socket level, not only through unit assertions. For issue #3516, latest `origin/main` already contained the upstream fix that stops matching host `openshell-gateway` processes during uninstall, so the useful work was local proof rather than another code change.
+
+A strong local proof pattern:
+
+1. Start from a clean worktree at latest `origin/main` when the primary checkout has unrelated uncommitted branch work.
+2. Run the focused regression test for the issue.
+3. Build the CLI before typechecking if generated `dist/*` declarations are required.
+4. Use an isolated Linux namespace to start a fake `openshell-gateway` process listening on the leaked port, run the uninstall plan, and verify the port listener is gone afterwards.
+5. Record that no code change was needed when the fix is already upstream; do not create duplicate contribution branches for already-merged fixes.
+
+Useful checks for this class of verification included:
+
+```bash
+./node_modules/.bin/vitest run src/lib/actions/uninstall/run-plan.test.ts --testNamePattern '#3516|openshell-gateway'
+npm run build:cli
+npm run typecheck:cli -- --pretty false
+```
+
+The key lesson is to prove the runtime cleanup boundary: unit coverage should show the uninstall plan calls the host-process cleanup path, and a hermetic process/socket test should show the leaked gateway listener actually disappears.
+
 ## Sign NemoClaw contribution commits before push
 
 NemoClaw contribution commits should be signed before they are pushed or used as PR heads. A useful local SSH-signing setup is:
