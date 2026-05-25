@@ -252,3 +252,27 @@ git diff --check
 ```
 
 The boundary is the main lesson: adding a client binary, proxy bridge, and default SSH client config is runtime capability; allowing destinations is still a network-policy decision.
+
+## Destroy cleanup must cover host gateway processes, not only containers or pidfiles
+
+NemoClaw gateway destroy cleanup can leave a host `openshell-gateway` process behind even when Docker containers, volumes, and gateway metadata are removed correctly. For issue #3516, the remaining leak was not `nemoclaw uninstall`; upstream had already fixed that path. The unresolved path was `openshell gateway destroy` / Docker-driver gateway cleanup, where the host gateway listener on port 8080 could survive after the Docker-side cleanup completed.
+
+A safer cleanup pattern:
+
+1. Keep ordinary gateway/container cleanup in place.
+2. Add a host-process sweep scoped narrowly enough to avoid killing unrelated OpenShell gateways.
+3. Match candidate processes by command line, then prove NemoClaw ownership through Docker-driver environment/state paths such as the NemoClaw OpenShell gateway database path.
+4. Do not rely only on an `openshell-gateway.pid` file; stale or absent pidfiles are exactly where the leak can escape.
+5. Wire the cleanup through both explicit gateway destroy cleanup and last-sandbox Linux cleanup paths.
+6. Prove the fix with unit coverage and a process/socket proof that the leaked listener actually disappears.
+
+Useful checks for this class of fix included:
+
+```bash
+./node_modules/.bin/vitest run src/lib/onboard/gateway-destroy.test.ts src/lib/actions/sandbox/destroy.test.ts src/lib/onboard/host-gateway-process-cleanup.test.ts
+git diff --check
+npm run build:cli
+npm run typecheck:cli -- --pretty false
+```
+
+The strongest local proof used an isolated Linux process/network namespace, started a fake NemoClaw-owned `openshell-gateway` on `127.0.0.1:8080`, intentionally left `openshell-gateway.pid` absent, ran the compiled CLI destroy path, and verified with `ss -ltnp 'sport = :8080'` that no listener remained afterwards. The key lesson is to test the destroy boundary users actually hit, not only the lower-level helper that should be called.
