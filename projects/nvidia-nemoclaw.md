@@ -277,3 +277,25 @@ npm run typecheck:cli -- --pretty false
 ```
 
 The strongest local proof used an isolated Linux process/network namespace, started a fake NemoClaw-owned `openshell-gateway` on `127.0.0.1:8080`, intentionally left `openshell-gateway.pid` absent, ran the compiled CLI destroy path, and verified with `ss -ltnp 'sport = :8080'` that no listener remained afterwards. A later simplification kept that proof while removing extra result-accounting and command-probing plumbing from the helper. The key lesson is to test the destroy boundary users actually hit, not only the lower-level helper that should be called.
+
+## Shields must fail before legacy Docker probes on VM-driver sandboxes
+
+NemoClaw `shields up` / `shields down` currently depend on a privileged backend that can mutate sandbox network policy. For macOS OpenShell VM-driver sandboxes, the legacy Docker/K3s container path is not present, so shields should not fall through to commands such as `docker exec openshell-cluster-nemoclaw kubectl ...`. That produces a misleading `No such container` failure and may happen after partial policy/state work has already begun.
+
+Safer pattern:
+
+1. Read the sandbox state before mutating shields policy/state or probing backend containers.
+2. Detect OpenShell VM-driver sandboxes explicitly.
+3. Fail closed with a clear unsupported-backend message before any Docker or kubectl call.
+4. Add regression coverage proving Docker probes are not invoked for VM-driver shields attempts.
+5. Keep the user-facing wording honest: this is a guardrail, not full VM-driver shields support. True support needs an upstream OpenShell capability for privileged host-side root execution or an equivalent VM-safe policy backend.
+
+Useful checks for this class of fix included:
+
+```bash
+npm run build:cli
+npx vitest run test/repro-2681-group-writable.test.ts src/lib/shields/index.test.ts
+node bin/nemoclaw.js alpha shields up
+```
+
+The key lesson is to make unsupported runtime boundaries explicit early. A clear refusal before side effects is safer than letting legacy backend assumptions fail late with an unrelated container error.
