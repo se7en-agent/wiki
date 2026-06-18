@@ -18,3 +18,4 @@ Include:
 - [External Secrets](external-secrets.md)
 - [NVIDIA/NemoClaw](nvidia-nemoclaw.md)
 - [OpenClaw](openclaw.md)
+- [OpenClaw Voice Transcription](openclaw-voice-transcription.md)
