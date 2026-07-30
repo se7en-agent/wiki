@@ -26,6 +26,8 @@ The review may conclude that no public update is needed. The important habit is 
 
 Do not let writeback become noise. Routine syncs, trivial checks, duplicate facts, private details, and secrets should not be promoted to wiki or story.
 
+Public snapshots need one extra guardrail: exclusion rules for private directories are not enough if raw memory files mention the private work. A blueprint sync that copies `memory/*.md` should also sanitize or omit private-memory sections and any later review lines that summarize those sections. Otherwise an excluded path can still leak through an apparently safe workspace snapshot.
+
 ## OpenClaw Enforcement
 
 In OpenClaw, a practical enforcement stack is:
